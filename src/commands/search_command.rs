@@ -1,4 +1,4 @@
-use std::io::{self, stdin, Write};
+use std::io::{self, Write};
 
 use reqwest::{blocking::Response};
 use scraper::{ElementRef};
@@ -49,7 +49,7 @@ impl<'a > SearchCommand<'a> {
         let mut buf = String::new();
 
         print!("Select items > ");
-        io::stdout().flush();
+        io::stdout().flush().unwrap();
         io::stdin().read_line(&mut buf).unwrap();
 
         let indices: Vec<usize> = buf.split_whitespace().map(|x| x.parse::<usize>().unwrap()).collect();
@@ -66,7 +66,7 @@ impl<'a > SearchCommand<'a> {
 
         println!("{:?}", selected_ids);
 
-        return (self.app_id.parse::<usize>().unwrap(), selected_ids)
+        return (self.app_id.trim().parse::<usize>().unwrap(), selected_ids)
 
     }
 
@@ -91,7 +91,7 @@ impl<'a > SearchCommand<'a> {
         format!(
             "https://steamcommunity.com/workshop/browse/?appid={}&searchtext={}&days={}&p={}",
             self.app_id, 
-            self.data.options.get("--text").or(Some(&String::from(""))).unwrap(),
+            self.data.args.get(0).or(Some(&"")).unwrap(),
             self.data.options.get("--date").or(Some(&String::from("-1"))).unwrap(),
             self.data.options.get("--p").or(Some(&page.to_string())).unwrap(),
         )
