@@ -27,7 +27,17 @@ impl<'a > HelpCommand<'a> {
 
         println!(
             "{0: <30} | {1: <30} | {2: <30} | {3: <30}",
-            "search", "(gameID, alias) [query]", "(pages [number])", "Search workshop items"
+            "search", "(id, alias) [query]", "(pages [number])", "Search workshop items"
+        );
+
+        println!(
+            "{0: <30} | {1: <30} | {2: <30} | {3: <30}",
+            "export", "-", "-", "Exports the download command to a txt file"
+        );
+
+        println!(
+            "{0: <30} | {1: <30} | {2: <30} | {3: <30}",
+            "download", "-", "-", "Downloads items via steamcmd (exports automatically)"
         );
     }
 }

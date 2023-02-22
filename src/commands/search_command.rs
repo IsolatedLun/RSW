@@ -37,7 +37,7 @@ impl<'a > SearchCommand<'a> {
         let app_header_selector = scraper::Selector::parse(".apphub_HomeHeaderContent").unwrap();
 
         if html.select(&app_header_selector).count() == 0 {
-            println!("[Error] > An app with an appID of '{}' does not exist", self.app_id);
+            println!("[Error] > An app with an appID of '{}' does not exist", self.app_id.trim());
             return (0, vec![]);
         }
 
@@ -48,11 +48,14 @@ impl<'a > SearchCommand<'a> {
 
         let mut buf = String::new();
 
-        print!("Select items > ");
+        print!("Select by index (0 1 2) > ");
         io::stdout().flush().unwrap();
         io::stdin().read_line(&mut buf).unwrap();
 
-        let indices: Vec<usize> = buf.split_whitespace().map(|x| x.parse::<usize>().unwrap()).collect();
+        let indices: Vec<usize> = buf.split_whitespace()
+            .filter(|x| x.chars().all(char::is_numeric))
+            .map(|x| x.parse::<usize>().unwrap())
+            .collect();
         let mut selected_ids: Vec<usize> = vec![];
 
         for idx in indices {
@@ -91,9 +94,9 @@ impl<'a > SearchCommand<'a> {
         format!(
             "https://steamcommunity.com/workshop/browse/?appid={}&searchtext={}&days={}&p={}",
             self.app_id, 
-            self.data.args.get(0).or(Some(&"")).unwrap(),
-            self.data.options.get("--date").or(Some(&String::from("-1"))).unwrap(),
-            self.data.options.get("--p").or(Some(&page.to_string())).unwrap(),
+            self.data.args.get(1).or(Some(&"")).unwrap(),
+            self.data.options.get("--days").or(Some(&String::from("-1"))).unwrap(),
+            self.data.options.get("--pages").or(Some(&page.to_string())).unwrap(),
         )
     }
 }
