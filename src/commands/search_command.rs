@@ -3,24 +3,28 @@ use std::io::{self, Write};
 use reqwest::{blocking::Response};
 use scraper::{ElementRef};
 
-use crate::cli::InputParser;
+use crate::{cli::InputParser, manager::Config};
 
 pub struct SearchCommand<'a> {
     pub data: &'a InputParser<'a >,
+    pub config: &'a mut Config,
     app_id: String
 }
 
 impl<'a > SearchCommand<'a> {
-    pub fn new(data: &'a InputParser) -> Self {
-        let app_id: String  = match data.args[0].chars().all(char::is_alphabetic) {
-            true => String::from("lol"),
-            false => data.args[0].to_string(),
-        };
-
-        SearchCommand { data, app_id }
+    pub fn new(config: &'a mut Config, data: &'a InputParser) -> Self {
+        SearchCommand { data, config: config, app_id: String::new() }
     }
 
-    pub fn run(&self) -> (usize, Vec<usize>) {
+    pub fn run(&mut self) -> (usize, Vec<usize>) {
+        let app_id_res = self.try_get_app_id();
+
+        if app_id_res.is_none() {
+            println!("[ERROR] App id not found for '{}'", self.data.args[0].trim());
+            return (0, vec![]);
+        }
+        self.app_id = app_id_res.unwrap();
+
         let url = self.create_url(1);
 
         let req: Option<Response> = match reqwest::blocking::get(&url) {
@@ -40,6 +44,15 @@ impl<'a > SearchCommand<'a> {
             println!("[Error] > An app with an appID of '{}' does not exist", self.app_id.trim());
             return (0, vec![]);
         }
+
+        if self.config.properties.is_some() {
+            let title_selector = scraper::Selector::parse("title").unwrap();
+            let title_el: ElementRef = *(html.select(&title_selector).collect::<Vec<ElementRef>>())
+                .get(0).unwrap();
+
+            self.config.properties.as_mut().unwrap().set_alias(self.app_id.clone(), title_el);
+        }
+        
 
         let workshop_item_selector = scraper::Selector::parse(".workshopItem").unwrap();
         let mut workshop_items: Vec<ElementRef> = html.select(&workshop_item_selector).collect();
@@ -77,6 +90,17 @@ impl<'a > SearchCommand<'a> {
         workshop_item.select(&scraper::Selector::parse(".ugc").unwrap())
             .next().unwrap()
             .value().attr("data-publishedfileid").unwrap()
+    }
+
+    fn try_get_app_id(&mut self) -> Option<String> {
+        if self.data.args[0].trim().chars().all(char::is_numeric) {
+            return Some(self.data.args[0].to_owned());
+        }
+
+        match &self.config.properties {
+            Some(props) => props.get_alias(self.data.args[0].trim().to_owned()).cloned(),
+            None => None
+        }
     }
 
     fn display_workshop_items(&self, items: &mut Vec<ElementRef>) {

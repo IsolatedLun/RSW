@@ -1,73 +1,18 @@
-use std::{collections::HashMap, fs::File, io::Write, io::Read, vec, process::Command};
+use std::{collections::HashMap, fs::File, io::Write, io::Read, vec, process::Command, path::Path};
 use rand::distributions::{Alphanumeric, DistString};
+use scraper::ElementRef;
 use serde::{Deserialize, Serialize};
-
-struct Config {
-    properties: Option<ConfigProperties>
-}
-
-impl Config {
-    pub fn new() -> Self {
-        Config { properties: None }
-    }
-
-    pub fn load_config(&mut self) {
-        let mut json_config_file: Option<File> = match File::open("config.json") {
-            Ok(f) => Some(f),
-            Err(_) => {
-                println!("[INFO] Creating new config file");
-                
-                match File::create("config.json") {
-                    Ok(f) => Some(f),
-                    Err(_) => {
-                        println!("[ERROR] Failed creating config file");
-                        None
-                    }
-                }
-            }
-        };
-
-        if json_config_file.is_none() {
-            return;
-        }
-
-        let mut text_data: String = String::new();
-
-        json_config_file.unwrap().read_to_string(&mut text_data).unwrap();
-
-        // serde_json::to_string(&ConfigProperties::new());
-        // WIP
-        // if config is invalid, prompt the user to reset or manually fix it themselves 
-        let json_data: ConfigProperties = match serde_json::from_str(&text_data) {
-            Ok(data) => data,
-            Err(_) => panic!("Invalid json format for config")
-        };
-
-        self.properties = Some(json_data);
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-struct ConfigProperties {
-    aliases: Vec<(usize, String)>
-}
-
-impl ConfigProperties {
-    pub fn new() -> Self {
-        ConfigProperties { aliases: vec![] }
-    }
-}
 
 pub struct Manager {
     workshop: HashMap<usize, (String, Vec<usize>)>,
-    config: Option<Config>
+    pub config: Config
 }
 
 impl Manager {
     pub fn new() -> Self {
         Manager {
             workshop: HashMap::new(),
-            config: Some(Config::new())
+            config: Config::new()
         }
     }
 
@@ -128,5 +73,90 @@ impl Manager {
         else {
             String::from("LMAO")
         }
+    }
+
+    pub fn save(&self) {
+        match &self.config.properties {
+            Some(data) => {
+                let str_data = serde_json::to_string(&data).unwrap();
+                
+                std::fs::write("config.json", str_data).unwrap();
+            },
+            None => unreachable!()
+        }
+    }
+}
+
+// ==========================
+// Config
+// ==========================
+pub struct Config {
+    pub properties: Option<ConfigProperties>
+}
+
+impl Config {
+    pub fn new() -> Self {
+        Config { properties: None }
+    }
+
+    pub fn load_config(&mut self) {
+        let res = self.create_config_file();
+
+        if res.is_err() {
+            return;
+        }
+
+        let mut json_config_file = File::open("config.json").unwrap();
+        let mut text_data: String = String::new();
+
+        json_config_file.read_to_string(&mut text_data).unwrap();
+
+        // WIP
+        // if config is invalid, prompt the user to reset or manually fix it themselves 
+        let json_data: ConfigProperties = match serde_json::from_str(&text_data) {
+            Ok(data) => data,
+            Err(_) => panic!("Invalid json format for config")
+        };
+
+        self.properties = Some(json_data);
+    }
+
+    fn create_config_file(&self) -> Result<(), ()> {
+        match Path::new("config.json").exists() {
+            true => Ok(()),
+            false => {
+                println!("[INFO] Creating config file");
+
+                if File::create("config.json").is_err() {
+                    return Err(())
+                }
+
+                Ok(())
+            }
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ConfigProperties {
+    #[serde(default)]
+    pub aliases: HashMap<String, String>
+}
+
+impl ConfigProperties {
+    #[warn(dead_code)]
+    pub fn new() -> Self {
+        ConfigProperties { aliases: HashMap::new() }
+    }
+
+    pub fn get_alias(&self, alias: String) -> Option<&String> {
+        self.aliases.get(&alias)
+    }
+
+    pub fn set_alias(&mut self, app_id: String, title_el: ElementRef) {
+        let name: String = title_el.text().map(|x| x).collect();
+
+        self.aliases.insert(name.clone(), app_id.trim().to_string());
+        println!("[INFO] Added alias for '{}'", name);
     }
 }
