@@ -1,15 +1,20 @@
 use crate::cli::InputParser;
+use crate::commands::command::Command;
+use crate::manager::Config;
 
 pub struct HelpCommand<'a> {
-    pub data: &'a InputParser<'a >,
+    pub data: InputParser,
+    pub config: &'a mut Config
 }
 
-impl<'a > HelpCommand<'a> {
-    pub fn new(data: &'a InputParser) -> Self {
-        HelpCommand { data }
+impl<'a> Command<'a, ()> for HelpCommand<'a> {
+    fn new(config: &'a mut Config, data: InputParser) -> Self {
+        HelpCommand { data, config }
     }
 
-    pub fn run(&self) {
+    // WIP:
+    // Store help commands in a hashmap and iterate through it instead of manually coding it in
+    fn run(&mut self) {
         println!(
             "{0: <30} | {1: <30} | {2: <30} | {3: <30}",
             "Command", "Args", "Options", "Description"
@@ -39,5 +44,9 @@ impl<'a > HelpCommand<'a> {
             "{0: <30} | {1: <30} | {2: <30} | {3: <30}",
             "download", "-", "-", "Downloads items via steamcmd (exports automatically)"
         );
+    }
+
+    fn assert(&self) -> Result<(), String> {
+        Ok(())
     }
 }

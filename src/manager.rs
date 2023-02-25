@@ -3,8 +3,10 @@ use rand::distributions::{Alphanumeric, DistString};
 use scraper::ElementRef;
 use serde::{Deserialize, Serialize};
 
+use crate::utils::{underscorize, log, LogLevel};
+
 pub struct Manager {
-    workshop: HashMap<usize, (String, Vec<usize>)>,
+    workshop: HashMap<String, (String, Vec<usize>)>,
     pub config: Config
 }
 
@@ -16,33 +18,40 @@ impl Manager {
         }
     }
 
-    pub fn add_items(&mut self, app_id: usize, items: Vec<usize>) {
+    pub fn add_items(&mut self, app_id: String, items: Vec<usize>) {
         if items.len() == 0 {
             return;
         }
         
         let items_len = items.len();
+        let name = self.config.get_props_ref()
+                .unwrap()
+                .get_name_by_app_id(app_id.clone())
+                .unwrap();
 
         if self.workshop.contains_key(&app_id) {
             self.workshop.get_mut(&app_id).unwrap().1.extend(items);
         }
 
         else {
-            self.workshop.insert(app_id, (String::from("lol"), items));
+            self.workshop.insert(app_id.clone(), (name.to_owned(), items));
         }
 
-        println!("Added {} items for '{}'", items_len, self.alias(&self.workshop.get(&app_id).unwrap().0));
+        log(
+            LogLevel::SUCCESS, 
+            format!("Added {} items for '{}'", items_len, name)
+        )
     }
 
-    pub fn export(&mut self) -> Vec<(usize, String)> {
-        let mut contents_list: Vec<(usize, String)> = vec![];
+    pub fn export(&mut self) -> Vec<(String, String)> {
+        let mut contents_list: Vec<(String, String)> = vec![];
 
         for (app_id, (app_name, item_ids)) in self.workshop.iter() {
             let rand_string = Alphanumeric.sample_string(&mut rand::thread_rng(), 8);
             let mut contents = String::from("steamcmd +login anonymous +workshop_download_item");
 
             for id in item_ids.iter() {
-                contents.push_str(format!(" {:?}", id).as_str());
+                contents.push_str(format!(" +workshop_download_item {:?}", id).as_str());
             }
 
             let mut file = File::create(format!(
@@ -50,17 +59,32 @@ impl Manager {
             )).unwrap();
 
             file.write_all(contents.as_bytes()).unwrap();
-            contents_list.push((*app_id, contents));
+            contents_list.push((app_id.clone(), contents));
         }
 
         contents_list
     }
 
     pub fn download(&mut self) {
-        for (app_id, command) in self.export() {
-            match Command::new(command).spawn() {
-                Ok(_res) => println!("[SUCCESS] Downloaded items for '{}'", app_id),
-                Err(_err) => println!("[ERROR] Couldn't downloads items for '{}'", app_id)
+        for (app_id, content) in self.export() {
+            let name = match self.config.get_props_ref() {
+                Some(props) => props.get_name_by_app_id(app_id).unwrap(),
+                None => app_id
+            };
+
+            let mut command = Command::new("cmd");
+            command.arg("&&");
+            command.arg(content);
+
+            match command.output() {
+                Ok(_res) => log(
+                    LogLevel::SUCCESS, 
+                    format!("Downloaded items for '{}'", name)
+                ),
+                Err(_err) => log(
+                    LogLevel::ERR, 
+                    format!("Couldn't downloads items for '{}'", name)
+                )
             }
         }
     }
@@ -99,6 +123,10 @@ impl Config {
         Config { properties: None }
     }
 
+    pub fn get_props_ref(&self) -> Option<&ConfigProperties> {
+        self.properties.as_ref()
+    }
+
     pub fn load_config(&mut self) {
         let res = self.create_config_file();
 
@@ -115,7 +143,13 @@ impl Config {
         // if config is invalid, prompt the user to reset or manually fix it themselves 
         let json_data: ConfigProperties = match serde_json::from_str(&text_data) {
             Ok(data) => data,
-            Err(_) => panic!("Invalid json format for config")
+            Err(_) => {
+                log(
+                    LogLevel::ERR, 
+                    format!("Invalid json format for config")
+                );
+                panic!("");
+            }
         };
 
         self.properties = Some(json_data);
@@ -125,7 +159,10 @@ impl Config {
         match Path::new("config.json").exists() {
             true => Ok(()),
             false => {
-                println!("[INFO] Creating config file");
+                log(
+                    LogLevel::INFO, 
+                    format!("Creating log file")
+                );
 
                 if File::create("config.json").is_err() {
                     return Err(())
@@ -149,14 +186,29 @@ impl ConfigProperties {
         ConfigProperties { aliases: HashMap::new() }
     }
 
-    pub fn get_alias(&self, alias: String) -> Option<&String> {
-        self.aliases.get(&alias)
+    pub fn get_app_id_by_name(&self, name: String) -> Option<String> {
+        self.aliases.get(&name).cloned()
+    }
+
+    pub fn get_name_by_app_id(&self, app_id: String) -> Option<String> {
+        for (name, _app_id) in self.aliases.to_owned().into_iter() {
+            if app_id == _app_id {
+                return Some(name);
+            }
+        }
+
+        None
     }
 
     pub fn set_alias(&mut self, app_id: String, title_el: ElementRef) {
-        let name: String = title_el.text().map(|x| x).collect();
+        let name: String = underscorize(title_el.text().map(|x| x).collect());
 
-        self.aliases.insert(name.clone(), app_id.trim().to_string());
-        println!("[INFO] Added alias for '{}'", name);
+        match self.aliases.insert(name.clone(), app_id.trim().to_string()) {
+            None => log(
+                LogLevel::INFO, 
+                format!("Added alias for '{}'", name)
+            ),
+            _ => ()
+        }
     }
 }

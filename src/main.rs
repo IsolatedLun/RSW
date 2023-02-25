@@ -1,16 +1,23 @@
 use std::io::{self, stdin, Write};
 use std::process::exit;
 
+use commands::command::Command;
 use commands::help_command::HelpCommand;
 use commands::search_command::SearchCommand;
+use commands::alias_command::AliasCommand;
+
+use crate::utils::{log, LogLevel};
 
 const VERSION: f32 = 1.0;
 
 mod cli;
 mod manager;
+mod utils;
 mod commands {
+    pub mod command;
     pub mod help_command;
     pub mod search_command;
+    pub mod alias_command;
 }
 
 
@@ -26,14 +33,12 @@ fn main() {
         io::stdout().flush().unwrap();
         stdin().read_line(&mut buf).unwrap();
 
-        let input_parser = cli::InputParser::new(&buf);
+        let input_parser = cli::InputParser::new(buf);
 
-        // TODO:
-        // Add manager that handles file system, aliases, and downloading...
         match input_parser.command.as_str().trim() {
-            "help" => HelpCommand::new(&input_parser).run(),
+            "help" => HelpCommand::new(&mut manager.config,input_parser).run(),
             "search" => {
-                let (app_id, items) = SearchCommand::new(&mut manager.config, &input_parser).run();
+                let (app_id, items) = SearchCommand::new(&mut manager.config, input_parser).run();
                 manager.add_items(app_id, items);
             },
             "export" => {
@@ -43,22 +48,21 @@ fn main() {
                 manager.download();
             },
             "aliases" => {
-                match input_parser.args[0].trim() {
-                    "show" => {
-                        if manager.config.properties.is_some() {
-                            println!("> {:?}", manager.config.properties.as_ref().unwrap().aliases)
-                        }
-                    },
-                    _ => ()
-                }
+                AliasCommand::new(&mut manager.config, input_parser).run();
             },
             "exit" => {
-                println!("[EXIT] Saving and exitting...");
+                log(
+                    LogLevel::EXIT, 
+                    format!("Saving and exitting...")
+                );
                 manager.save();
                 
                 exit(0);
             }
-            _ => println!("'{}' is not a valid command", input_parser.command.trim())
+            _ => log(
+                LogLevel::ERR, 
+                format!("'{}' is not a valid command", input_parser.command.trim())
+            )
         }
     }
 }

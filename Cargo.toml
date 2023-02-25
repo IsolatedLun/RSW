@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+sccache = "0.3.3"
 reqwest = {version = "0.11", features = ["blocking"]}
 scraper = "0.12.0"
 rand = "0.8.5"

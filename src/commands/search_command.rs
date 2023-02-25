@@ -1,27 +1,38 @@
-use std::io::{self, Write};
+use std::{io::{self, Write}};
 
 use reqwest::{blocking::Response};
 use scraper::{ElementRef};
 
-use crate::{cli::InputParser, manager::Config};
+use crate::{cli::InputParser, manager::Config, commands::command::Command, utils::{log, LogLevel}};
 
 pub struct SearchCommand<'a> {
-    pub data: &'a InputParser<'a >,
+    pub data: InputParser,
     pub config: &'a mut Config,
     app_id: String
 }
 
-impl<'a > SearchCommand<'a> {
-    pub fn new(config: &'a mut Config, data: &'a InputParser) -> Self {
-        SearchCommand { data, config: config, app_id: String::new() }
+impl<'a> Command<'a, (String, Vec<usize>)> for SearchCommand<'a> {
+    fn new(config: &'a mut Config, data: InputParser) -> Self {
+        SearchCommand { data, config, app_id: String::new() }
     }
 
-    pub fn run(&mut self) -> (usize, Vec<usize>) {
-        let app_id_res = self.try_get_app_id();
+    fn run(&mut self) -> (String, Vec<usize>) {
+        let assertion = self.assert();
+        if assertion.is_err() {
+            log(
+                LogLevel::ERR,
+                format!("{}", assertion.unwrap_err())
+            );
+            return (String::new(), vec![]);
+        }
 
+        let app_id_res = self.try_get_app_id();
         if app_id_res.is_none() {
-            println!("[ERROR] App id not found for '{}'", self.data.args[0].trim());
-            return (0, vec![]);
+            log(
+                LogLevel::ERR, 
+                format!("App id not found for '{}'", self.data.args[0].trim())
+            );
+            return (String::new(), vec![]);
         }
         self.app_id = app_id_res.unwrap();
 
@@ -33,16 +44,22 @@ impl<'a > SearchCommand<'a> {
         };
 
         if req.is_none() {
-            println!("[Error] > Couldn't access steam workshop at this time");
-            return (0, vec![])
+            log(
+                LogLevel::ERR, 
+                format!("Couldn't access steam workshop at this time")
+            );
+            return (String::new(), vec![])
         }
 
         let html = scraper::Html::parse_document(&req.unwrap().text().unwrap());
         let app_header_selector = scraper::Selector::parse(".apphub_HomeHeaderContent").unwrap();
 
         if html.select(&app_header_selector).count() == 0 {
-            println!("[Error] > An app with an appID of '{}' does not exist", self.app_id.trim());
-            return (0, vec![]);
+            log(
+                LogLevel::ERR, 
+                format!("An app with an appID of '{}' does not exist", self.app_id.trim())
+            );
+            return (String::new(), vec![]);
         }
 
         if self.config.properties.is_some() {
@@ -76,16 +93,29 @@ impl<'a > SearchCommand<'a> {
                 Some(item) => selected_ids.push(
                     self.get_item_id(item).parse::<usize>().unwrap()
                 ),
-                None => println!("[ERROR] Item with an index of '{}' does not exist", idx)
+                None => log(
+                    LogLevel::ERR, 
+                    format!("Item with an index of '{}' does not exist", idx)
+                )
             }
         }
 
         println!("{:?}", selected_ids);
 
-        return (self.app_id.trim().parse::<usize>().unwrap(), selected_ids)
+        return (self.app_id.trim().to_string(), selected_ids)
 
     }
 
+    fn assert(&self) -> Result<(), String> {
+        if self.data.args.len() == 0 {
+            return Err(String::from("Insufficient arguments"))
+        }
+
+        Ok(())
+    }
+}
+
+impl<'a> SearchCommand<'a> {
     fn get_item_id(&self, workshop_item: &'a ElementRef) -> &str {
         workshop_item.select(&scraper::Selector::parse(".ugc").unwrap())
             .next().unwrap()
@@ -98,7 +128,7 @@ impl<'a > SearchCommand<'a> {
         }
 
         match &self.config.properties {
-            Some(props) => props.get_alias(self.data.args[0].trim().to_owned()).cloned(),
+            Some(props) => props.get_app_id_by_name(self.data.args[0].trim().to_owned()),
             None => None
         }
     }
@@ -118,7 +148,7 @@ impl<'a > SearchCommand<'a> {
         format!(
             "https://steamcommunity.com/workshop/browse/?appid={}&searchtext={}&days={}&p={}",
             self.app_id, 
-            self.data.args.get(1).or(Some(&"")).unwrap(),
+            self.data.args.get(1).or(Some(&String::from(""))).unwrap(),
             self.data.options.get("--days").or(Some(&String::from("-1"))).unwrap(),
             self.data.options.get("--pages").or(Some(&page.to_string())).unwrap(),
         )
