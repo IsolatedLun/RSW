@@ -29,7 +29,6 @@ impl InputParser {
         let mut options_hashmap: HashMap<String, String> = HashMap::new();
         for item in list[option_offset..].chunks(2) {
             assert!(item.len() == 2);
-            assert!(!item[1].starts_with("--"), "Argument for '{}' cannot be an option", item[0]);
 
             options_hashmap.insert(item[0].to_string(), item[1].to_string());
         };

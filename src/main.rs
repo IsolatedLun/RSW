@@ -9,6 +9,7 @@ use commands::alias_command::AliasCommand;
 use crate::utils::{log, LogLevel};
 
 const VERSION: f32 = 1.0;
+const STEAMCMD_DIR: &str = r#"C:/Users/user/Desktop/steamcmd"#;
 
 mod cli;
 mod manager;

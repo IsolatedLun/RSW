@@ -3,7 +3,7 @@ use rand::distributions::{Alphanumeric, DistString};
 use scraper::ElementRef;
 use serde::{Deserialize, Serialize};
 
-use crate::utils::{underscorize, log, LogLevel};
+use crate::{utils::{underscorize, log, LogLevel}, STEAMCMD_DIR};
 
 pub struct Manager {
     workshop: HashMap<String, (String, Vec<usize>)>,
@@ -43,22 +43,25 @@ impl Manager {
         )
     }
 
-    pub fn export(&mut self) -> Vec<(String, String)> {
-        let mut contents_list: Vec<(String, String)> = vec![];
+    pub fn export(&mut self) -> Vec<(String, Vec<String>)> {
+        let mut contents_list: Vec<(String, Vec<String>)> = vec![];
 
         for (app_id, (app_name, item_ids)) in self.workshop.iter() {
             let rand_string = Alphanumeric.sample_string(&mut rand::thread_rng(), 8);
-            let mut contents = String::from("steamcmd +login anonymous +workshop_download_item");
+            let mut contents: Vec<String> = vec![String::from("+login"), String::from("anonymous")];
 
             for id in item_ids.iter() {
-                contents.push_str(format!(" +workshop_download_item {:?}", id).as_str());
+                contents.push(format!("+workshop_download_item"));
+                contents.push(app_id.to_string());
+                contents.push(id.to_string())
             }
+            contents.push(String::from("+quit"));
 
             let mut file = File::create(format!(
                 "{}-{}-{}.txt", app_id, app_name, rand_string
             )).unwrap();
 
-            file.write_all(contents.as_bytes()).unwrap();
+            file.write_all(contents.join(" ").as_bytes()).unwrap();
             contents_list.push((app_id.clone(), contents));
         }
 
@@ -72,19 +75,25 @@ impl Manager {
                 None => app_id
             };
 
-            let mut command = Command::new("cmd");
-            command.arg("&&");
-            command.arg(content);
+            let mut command = Command::new("C:/Users/user/Desktop/steamcmd/steamcmd.exe");
+            command.args(content);
 
             match command.output() {
-                Ok(_res) => log(
-                    LogLevel::SUCCESS, 
-                    format!("Downloaded items for '{}'", name)
-                ),
-                Err(_err) => log(
-                    LogLevel::ERR, 
-                    format!("Couldn't downloads items for '{}'", name)
-                )
+                Ok(_res) => {
+                    println!("{}", String::from_utf8(_res.stderr).unwrap());
+                    log(
+                        LogLevel::SUCCESS, 
+                        format!("Downloaded items for '{}'", name)
+                    );
+                },
+                Err(_err) => {
+                    println!("{}", _err.to_string());
+                    log(
+                        LogLevel::ERR, 
+                        format!("Couldn't downloads items for '{}'", name)
+                    );
+                }
+                
             }
         }
     }
