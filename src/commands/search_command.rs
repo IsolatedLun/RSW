@@ -30,7 +30,7 @@ impl<'a> Command<'a, (String, Vec<usize>)> for SearchCommand<'a> {
         if app_id_res.is_none() {
             log(
                 LogLevel::ERR, 
-                format!("App id not found for '{}'", self.data.args[0].trim())
+                format!("App id not found for '{}'", self.data.args[0])
             );
             return (String::new(), vec![]);
         }
@@ -123,12 +123,12 @@ impl<'a> SearchCommand<'a> {
     }
 
     fn try_get_app_id(&mut self) -> Option<String> {
-        if self.data.args[0].trim().chars().all(char::is_numeric) {
+        if self.data.args[0].chars().all(char::is_numeric) {
             return Some(self.data.args[0].to_owned());
         }
 
         match &self.config.properties {
-            Some(props) => props.get_app_id_by_name(self.data.args[0].trim().to_owned()),
+            Some(props) => props.get_app_id_by_name(self.data.args[0].to_owned()),
             None => None
         }
     }

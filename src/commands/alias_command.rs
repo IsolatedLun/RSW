@@ -19,17 +19,17 @@ impl<'a> Command<'a, ()> for AliasCommand<'a> {
             );
             return;
         }
-        match self.data.args[1].trim() {
+        match self.data.args[0].as_str() {
             "show" => self.display_aliases(),
             _ => log(
                 LogLevel::ERR, 
-                format!("'{}' is not a valid command", self.data.args[1].trim())
+                format!("'{}' is not a valid command", self.data.args[0])
             )
         }
     }
 
     fn assert(&self) -> Result<(), String> {
-        if self.data.args.len() <= 1 {
+        if self.data.args.len() == 0 {
             return Err(String::from("Insufficient arguments"))
         }
 

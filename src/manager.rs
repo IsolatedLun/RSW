@@ -89,16 +89,6 @@ impl Manager {
         }
     }
 
-    pub fn alias(&self, alias_or_app_id: &String) -> String {
-        if alias_or_app_id.chars().all(char::is_alphabetic) {
-            alias_or_app_id.to_owned()
-        }
-
-        else {
-            String::from("LMAO")
-        }
-    }
-
     pub fn save(&self) {
         match &self.config.properties {
             Some(data) => {

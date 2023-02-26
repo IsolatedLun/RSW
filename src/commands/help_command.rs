@@ -27,12 +27,12 @@ impl<'a> Command<'a, ()> for HelpCommand<'a> {
 
         println!(
             "{0: <30} | {1: <30} | {2: <30} | {3: <30}",
-            "aliases", "(show, add [number])", "-", "-"
+            "aliases", "(show/add [number])", "-", "-"
         );
 
         println!(
             "{0: <30} | {1: <30} | {2: <30} | {3: <30}",
-            "search", "(id, alias) [query]", "(pages [number])", "Search workshop items"
+            "search", "(appID/appName) [query]", "--pages [number]", "Search workshop items"
         );
 
         println!(

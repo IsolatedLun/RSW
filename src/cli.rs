@@ -10,7 +10,6 @@ pub struct InputParser{
 impl InputParser {
     pub fn new(input: String) -> Self {
         let mut list = InputParser::parse(input);
-        println!("{:?}", list);
 
         assert!(list.len() > 0);
         assert!(!list[0].starts_with("--"), "First argument must be a command");
@@ -66,9 +65,13 @@ impl InputParser {
                 }
             }
 
-            else if ch.is_alphanumeric() {
+            else {
                 temp.push(ch);
             }
+        }
+        
+        if !temp.is_empty() {
+            list.push(temp.trim().to_string().clone());
         }
 
         list
