@@ -11,8 +11,8 @@ impl InputParser {
     pub fn new(input: String) -> Self {
         let mut list = InputParser::parse(input);
 
-        assert!(list.len() > 0);
-        assert!(!list[0].starts_with("--"), "First argument must be a command");
+        // assert!(list.len() > 0);
+        // assert!(!list[0].starts_with("--"), "First argument must be a command");
 
         let mut option_offset: usize = 0;
         for (i, mut item) in list.clone().into_iter().enumerate() {
