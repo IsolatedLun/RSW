@@ -75,22 +75,28 @@ impl Manager {
                 None => app_id
             };
 
-            let mut command = Command::new("C:/Users/user/Desktop/steamcmd/steamcmd.exe");
+            let mut command = Command::new(STEAMCMD_DIR);
             command.args(content);
 
             match command.output() {
                 Ok(_res) => {
-                    println!("{}", String::from_utf8(_res.stderr).unwrap());
                     log(
                         LogLevel::SUCCESS, 
                         format!("Downloaded items for '{}'", name)
                     );
+                    log(
+                        LogLevel::INFO,
+                        String::from_utf8(_res.stderr).unwrap()
+                    )
                 },
                 Err(_err) => {
-                    println!("{}", _err.to_string());
                     log(
                         LogLevel::ERR, 
                         format!("Couldn't downloads items for '{}'", name)
+                    );
+                    log(
+                        LogLevel::ERR, 
+                        format!("Cause: {}", _err.kind())
                     );
                 }
                 

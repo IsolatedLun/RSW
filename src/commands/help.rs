@@ -1,5 +1,5 @@
 use crate::cli::InputParser;
-use crate::commands::command::Command;
+use crate::commands::Command;
 use crate::manager::Config;
 
 pub struct HelpCommand<'a> {

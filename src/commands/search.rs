@@ -3,7 +3,7 @@ use std::{io::{self, Write}};
 use reqwest::{blocking::Response};
 use scraper::{ElementRef};
 
-use crate::{cli::InputParser, manager::Config, commands::command::Command, utils::{log, LogLevel}};
+use crate::{cli::InputParser, manager::Config, commands::Command, utils::{log, LogLevel}};
 
 pub struct SearchCommand<'a> {
     pub data: InputParser,
@@ -100,7 +100,8 @@ impl<'a> Command<'a, (String, Vec<usize>)> for SearchCommand<'a> {
             }
         }
 
-        println!("{:?}", selected_ids);
+        selected_ids.sort();
+        selected_ids.dedup();
 
         return (self.app_id.trim().to_string(), selected_ids)
 

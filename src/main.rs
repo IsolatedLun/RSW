@@ -1,25 +1,20 @@
 use std::io::{self, stdin, Write};
 use std::process::exit;
 
-use commands::command::Command;
-use commands::help_command::HelpCommand;
-use commands::search_command::SearchCommand;
-use commands::alias_command::AliasCommand;
-
 use crate::utils::{log, LogLevel};
+use crate::commands::Command;
+
+use crate::commands::alias::AliasCommand;
+use crate::commands::search::SearchCommand;
+use crate::commands::help::HelpCommand;
 
 const VERSION: f32 = 1.0;
-const STEAMCMD_DIR: &str = r#"C:/Users/user/Desktop/steamcmd"#;
+const STEAMCMD_DIR: &str = r#"C:/Users/user/Desktop/steamcmd/steamcmd.exe"#;
 
 mod cli;
 mod manager;
 mod utils;
-mod commands {
-    pub mod command;
-    pub mod help_command;
-    pub mod search_command;
-    pub mod alias_command;
-}
+mod commands;
 
 
 fn main() {

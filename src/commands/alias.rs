@@ -1,4 +1,4 @@
-use crate::{cli::InputParser, utils::{log, LogLevel}, manager::Config, commands::command::Command};
+use crate::{cli::InputParser, utils::{log, LogLevel}, manager::Config, commands::Command};
 
 pub struct AliasCommand<'a> {
     pub data: InputParser,

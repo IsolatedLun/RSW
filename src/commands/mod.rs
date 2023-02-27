@@ -5,3 +5,7 @@ pub trait Command<'a, Run> {
     fn run(&mut self) -> Run;
     fn assert(&self) -> Result<(), String>; 
 }
+
+pub mod alias;
+pub mod help;
+pub mod search;
