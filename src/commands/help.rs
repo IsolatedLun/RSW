@@ -27,22 +27,27 @@ impl<'a> Command<'a, ()> for HelpCommand<'a> {
 
         println!(
             "{0: <30} | {1: <30} | {2: <30} | {3: <30}",
-            "aliases", "(show/add [number])", "-", "-"
+            "aliases", "show, add [name] [appID], remove [name]", "-", "-"
         );
 
         println!(
             "{0: <30} | {1: <30} | {2: <30} | {3: <30}",
-            "search", "(appID/appName) [query]", "--pages [number]", "Search workshop items"
+            "search", "appID/appName [query]", "--pages [number]", "Search workshop items (sorted by top)"
         );
 
         println!(
             "{0: <30} | {1: <30} | {2: <30} | {3: <30}",
-            "export", "-", "-", "Exports the download command to a txt file"
+            "export", "-", "-", "Exports all added items to a valid steamcmd command in txt"
         );
 
         println!(
             "{0: <30} | {1: <30} | {2: <30} | {3: <30}",
             "download", "-", "-", "Downloads items via steamcmd (exports automatically)"
+        );
+
+        println!(
+            "{0: <30} | {1: <30} | {2: <30} | {3: <30}",
+            "exit", "-", "-", "Saves current data and exits"
         );
     }
 

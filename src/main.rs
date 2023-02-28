@@ -41,7 +41,7 @@ fn main() {
                 manager.export();
             }
             "download" => {
-                manager.download();
+                manager.download(input_parser);
             },
             "aliases" => {
                 AliasCommand::new(&mut manager.config, input_parser).run();

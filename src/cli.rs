@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use crate::utils::{log, LogLevel};
+
 pub struct InputParser{
     pub command: String,
     pub args: Vec<String>,
@@ -28,7 +30,13 @@ impl InputParser {
 
         let mut options_hashmap: HashMap<String, String> = HashMap::new();
         for item in list[option_offset..].chunks(2) {
-            assert!(item.len() == 2);
+            if item.len() <= 1 {
+                log(
+                    LogLevel::ERR, 
+                    format!("No value found for '{}'", item[0])
+                );
+                continue;
+            }
 
             options_hashmap.insert(item[0].to_string(), item[1].to_string());
         };

@@ -3,7 +3,7 @@ use rand::distributions::{Alphanumeric, DistString};
 use scraper::ElementRef;
 use serde::{Deserialize, Serialize};
 
-use crate::{utils::{underscorize, log, LogLevel}, STEAMCMD_DIR};
+use crate::{utils::{underscorize, log, LogLevel}, STEAMCMD_DIR, cli::InputParser};
 
 pub struct Manager {
     workshop: HashMap<String, (String, Vec<usize>)>,
@@ -43,63 +43,99 @@ impl Manager {
         )
     }
 
-    pub fn export(&mut self) -> Vec<(String, Vec<String>)> {
-        let mut contents_list: Vec<(String, Vec<String>)> = vec![];
+    pub fn export(&mut self) -> Vec<String> {
+        let mut contents: Vec<String> = vec![String::from("+login"), String::from("anonymous")];
+        let mut app_names: Vec<String> = vec![];
+
+        if self.workshop.len() == 0 {
+            return vec![];
+        }
 
         for (app_id, (app_name, item_ids)) in self.workshop.iter() {
-            let rand_string = Alphanumeric.sample_string(&mut rand::thread_rng(), 8);
-            let mut contents: Vec<String> = vec![String::from("+login"), String::from("anonymous")];
+            app_names.push(app_name.clone());
 
             for id in item_ids.iter() {
                 contents.push(format!("+workshop_download_item"));
                 contents.push(app_id.to_string());
                 contents.push(id.to_string())
             }
-            contents.push(String::from("+quit"));
-
-            let mut file = File::create(format!(
-                "{}-{}-{}.txt", app_id, app_name, rand_string
-            )).unwrap();
-
-            file.write_all(contents.join(" ").as_bytes()).unwrap();
-            contents_list.push((app_id.clone(), contents));
         }
 
-        contents_list
+        let rand_string = Alphanumeric.sample_string(&mut rand::thread_rng(), 8);
+        let mut file = File::create(format!(
+            "{}-{}.txt", app_names.join("+"), rand_string
+        )).unwrap();
+
+        contents.push(String::from("+quit"));
+        file.write_all(contents.join(" ").as_bytes()).unwrap();
+
+
+        contents
     }
 
-    pub fn download(&mut self) {
-        for (app_id, content) in self.export() {
-            let name = match self.config.get_props_ref() {
-                Some(props) => props.get_name_by_app_id(app_id).unwrap(),
-                None => app_id
+    pub fn download(&mut self, input: InputParser) {
+        let mut data: Vec<String> = vec![];
+
+        if input.options.contains_key("--file") {
+            let file = File::open(input.options.get("--file").unwrap());
+
+            match file {
+                Ok(mut f) => {
+                    let mut buf = String::new();
+                    f.read_to_string(&mut buf).unwrap();
+
+                    data.extend(
+                        buf.split_whitespace().map(|x| x.to_string()).collect::<Vec<String>>()
+                    )
+                },
+                Err(_) => log(
+                    LogLevel::ERR, 
+                    format!("File with the path '{}' does not exist", 
+                        input.options.get("--file").unwrap()
+                    )
+                )
             };
+        }
 
-            let mut command = Command::new(STEAMCMD_DIR);
-            command.args(content);
+        else {
+            data.extend(self.export())
+        }
+        println!("{:?}", data);
+        if data.len() == 0 {
+            log(
+                LogLevel::INFO,
+                format!("No items to download")
+            );
+            return;
+        }
+        
+        let data_len = (data.len() / 3) - 1; // we div. by 3, since for each item 2 more strings get pushed
+        let mut command = Command::new(STEAMCMD_DIR);
+        command.args(data);
 
-            match command.output() {
-                Ok(_res) => {
-                    log(
-                        LogLevel::SUCCESS, 
-                        format!("Downloaded items for '{}'", name)
-                    );
+        match command.output() {
+            Ok(_res) => {
+                log(
+                    LogLevel::SUCCESS, 
+                    format!("Downloaded {} items", data_len)
+                );
+
+                if _res.stderr.len() > 0 {
                     log(
                         LogLevel::INFO,
                         String::from_utf8(_res.stderr).unwrap()
                     )
-                },
-                Err(_err) => {
-                    log(
-                        LogLevel::ERR, 
-                        format!("Couldn't downloads items for '{}'", name)
-                    );
-                    log(
-                        LogLevel::ERR, 
-                        format!("Cause: {}", _err.kind())
-                    );
                 }
-                
+            },
+            Err(_err) => {
+                log(
+                    LogLevel::ERR, 
+                    format!("Couldn't download items")
+                );
+                log(
+                    LogLevel::ERR, 
+                    format!("Cause: {}", _err.kind())
+                );
             }
         }
     }
@@ -130,6 +166,10 @@ impl Config {
 
     pub fn get_props_ref(&self) -> Option<&ConfigProperties> {
         self.properties.as_ref()
+    }
+
+    pub fn get_props_mut(&mut self) -> Option<&mut ConfigProperties> {
+        self.properties.as_mut()
     }
 
     pub fn load_config(&mut self) {
@@ -214,6 +254,36 @@ impl ConfigProperties {
                 format!("Added alias for '{}'", name)
             ),
             _ => ()
+        }
+    }
+
+    pub fn set_alias_by_values(&mut self, name: String, app_id: String) {
+        let name: String = underscorize(name);
+
+        match self.aliases.insert(name.clone(), app_id) {
+            None => log(
+                LogLevel::INFO, 
+                format!("Added alias for '{}'", name)
+            ),
+            _ => log(
+                LogLevel::INFO, 
+                format!("Updated alias for '{}'", name)
+            ),
+        }
+    }
+
+    pub fn remove_alias(&mut self, name: String) {
+        let name: String = underscorize(name);
+
+        match self.aliases.remove(&name) {
+            Some(_) => log(
+                LogLevel::WARN, 
+                format!("Removed alias for '{}'", name)
+            ),
+            None => log(
+                LogLevel::ERR, 
+                format!("No alias found for '{}'", name)
+            )
         }
     }
 }

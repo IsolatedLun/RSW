@@ -21,10 +21,12 @@ impl<'a> Command<'a, ()> for AliasCommand<'a> {
         }
         match self.data.args[0].as_str() {
             "show" => self.display_aliases(),
+            "set" => self.set(),
+            "remove" => self.remove(),
             _ => log(
                 LogLevel::ERR, 
                 format!("'{}' is not a valid command", self.data.args[0])
-            )
+            ),
         }
     }
 
@@ -55,6 +57,52 @@ impl<'a> AliasCommand<'a> {
             None => log(
                 LogLevel::WARN, 
                 format!("No aliases found")
+            )
+        }
+    }
+
+    pub fn set(&mut self) {
+        if self.data.args.len() < 3 {
+            log(
+                LogLevel::ERR, 
+                format!("Insufficient arguments")
+            );
+            return;
+        }
+
+        if !self.data.args[2].chars().all(char::is_numeric) {
+            log(
+                LogLevel::ERR, 
+                format!("App id must only contains numbers")
+            );
+            return;
+        }
+
+        match self.config.get_props_mut() {
+            Some(props) => props.set_alias_by_values(
+                self.data.args[1].clone(), self.data.args[2].clone()
+            ),
+            None => log(
+                LogLevel::WARN, 
+                format!("No config found")
+            )
+        }
+    }
+
+    pub fn remove(&mut self) {
+        if self.data.args.len() < 2 {
+            log(
+                LogLevel::ERR, 
+                format!("Insufficient arguments")
+            );
+            return;
+        }
+
+        match self.config.get_props_mut() {
+            Some(props) => props.remove_alias(self.data.args[1].clone()),
+            None => log(
+                LogLevel::WARN, 
+                format!("No config found")
             )
         }
     }
