@@ -100,7 +100,7 @@ impl Manager {
         else {
             data.extend(self.export())
         }
-        println!("{:?}", data);
+
         if data.len() == 0 {
             log(
                 LogLevel::INFO,
@@ -108,11 +108,12 @@ impl Manager {
             );
             return;
         }
-        
-        let data_len = (data.len() / 3) - 1; // we div. by 3, since for each item 2 more strings get pushed
-        let mut command = Command::new(STEAMCMD_DIR);
-        command.args(data);
 
+        // we div. by 3, since for each item 2 more strings get pushed
+        let data_len = (data.len() / 3) - 1;
+        let mut command = Command::new(STEAMCMD_DIR);
+        
+        command.args(data);
         match command.output() {
             Ok(_res) => {
                 log(
