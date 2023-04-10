@@ -9,3 +9,4 @@ pub trait Command<'a, Run> {
 pub mod alias;
 pub mod help;
 pub mod search;
+pub mod convert;

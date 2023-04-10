@@ -10,10 +10,10 @@ Search and download items from steam via steamcmd.
 
 ### Commands
 
-| Command  | Arguments                                     | Options          |
-| -------- | --------------------------------------------- | ---------------- |
-| help     | -                                             | -                |
-| search   | (appID/appName) searchText                    | --pages (number) |
-| export   | -                                             | -                |
-| download | -                                             | -                |
-| aliases  | show, remove (appName), add (appName) (appID) | -                |
+| Command  | Arguments                                     | Options                          |
+| -------- | --------------------------------------------- | -------------------------------- |
+| help     | -                                             | -                                |
+| search   | (appID/appName) searchText                    | --pages (number)                 |
+| export   | -                                             | -                                |
+| download | -                                             | --file (filePath with extension) |
+| aliases  | show, remove (appName), add (appName) (appID) | -                                |

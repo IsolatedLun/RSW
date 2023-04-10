@@ -32,7 +32,7 @@ impl<'a> Command<'a, ()> for HelpCommand<'a> {
 
         println!(
             "{0: <30} | {1: <30} | {2: <30} | {3: <30}",
-            "search", "appID/appName [query]", "--pages [number]", "Search workshop items (sorted by top)"
+            "search", "[appAlias] [query]", "--pages [number]", "Search workshop items (sorted by top)"
         );
 
         println!(
@@ -42,7 +42,12 @@ impl<'a> Command<'a, ()> for HelpCommand<'a> {
 
         println!(
             "{0: <30} | {1: <30} | {2: <30} | {3: <30}",
-            "download", "-", "-", "Downloads items via steamcmd (exports automatically)"
+            "convert", "[appAlias] [filePath]", "--file", "Parses a file and converts it to the valid format"
+        );
+
+        println!(
+            "{0: <30} | {1: <30} | {2: <30} | {3: <30}",
+            "download", "-", "--file", "Downloads items via steamcmd (exports automatically)"
         );
 
         println!(

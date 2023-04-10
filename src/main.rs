@@ -7,6 +7,7 @@ use crate::commands::Command;
 use crate::commands::alias::AliasCommand;
 use crate::commands::search::SearchCommand;
 use crate::commands::help::HelpCommand;
+use crate::commands::convert::ConvertCommand;
 
 const VERSION: f32 = 1.0;
 const STEAMCMD_DIR: &str = r#"C:/Users/user/Desktop/steamcmd/steamcmd.exe"#;
@@ -37,6 +38,10 @@ fn main() {
                 let (app_id, items) = SearchCommand::new(&mut manager.config, input_parser).run();
                 manager.add_items(app_id, items);
             },
+            "convert" => {
+                let (app_id, items) = ConvertCommand::new(&mut manager.config, input_parser).run();
+                manager.add_items(app_id, items);
+            }
             "export" => {
                 manager.export();
             }
