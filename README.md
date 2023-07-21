@@ -2,10 +2,10 @@
 
 Search and download items from steam via steamcmd.
 
-## Instructions (NOT COMPLETE)
+## Instructions (Complete)
 
 - Donwload this repo
-- Run the executable
+- Build the project
 - Enjoy
 
 ### Commands
